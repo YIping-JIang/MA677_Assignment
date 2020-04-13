@@ -1,0 +1,206 @@
+---
+title: "MA677 Assignment JAGS"
+author: "Yiping Jiang"
+date: "4/13/2020"
+output: pdf_document
+---
+
+```{r setup, include = FALSE, echo = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Exercise 8.1
+```{r, echo = FALSE}
+#install.packages("rjags")
+#install.packages("runjags")
+require(rjags)
+source("/Users/sebas_jiang/Desktop/MA677/Assignment/Jags-Ydich-XnomSsubj-MbernBeta.R")
+#3 subjects
+myData <- read.csv("/Users/sebas_jiang/Desktop/MA677/Assignment/file.csv")
+y = myData$y
+s = as.numeric(myData$s)
+Ntotal = length(y)
+Nsubj = length(unique(s))
+dataList = list(y=y,s=s,Ntotal = Ntotal , Nsubj = Nsubj)
+modelString = "
+model {
+  for ( i in 1:Ntotal ) {
+    y[i] ~ dbern( theta )
+  }
+  theta ~ dbeta( 2 , 2 )
+}
+" 
+writeLines( modelString , con="/Users/sebas_jiang/Desktop/MA677/Assignment/TEMPmodel.txt" )
+# Generate the MCMC chain:
+mcmcCoda = genMCMC(data=myData , numSavedSteps=10000)
+# Display diagnostics of chain, for specified parameter:
+diagMCMC( mcmcCoda , parName="theta[1]" )
+# Display numerical summary statistics of chain:
+smryMCMC( mcmcCoda , compVal=NULL , compValDiff=0.0 )
+# Display graphical posterior information:
+plotMCMC( mcmcCoda , data=myData , compVal=NULL , compValDiff=0.0 )
+#2 subjects
+mydata <- read.csv("/Users/sebas_jiang/Desktop/MA677/Assignment/file1.csv")
+y = mydata$y
+s = as.numeric(mydata$s)
+Ntotal = length(y)
+Nsubj = length(unique(s))
+dataList = list(y=y,s=s,Ntotal = Ntotal, Nsubj = Nsubj)
+modelString = "
+model {
+  for ( i in 1:Ntotal ) {
+    y[i] ~ dbern( theta )
+  }
+  theta ~ dbeta( 2 , 2 )
+}
+"
+writeLines(modelString , con="/Users/sebas_jiang/Desktop/MA677/Assignment/TEMPmodel.txt")
+# Generate the MCMC chain:
+mcmcCoda = genMCMC(data=mydata, numSavedSteps=10000)
+# Display diagnostics of chain, for specified parameter:
+diagMCMC( mcmcCoda , parName="theta[1]" )
+# Display numerical summary statistics of chain:
+smryMCMC( mcmcCoda , compVal=NULL , compValDiff=0.0 )
+# Display graphical posterior information:
+plotMCMC( mcmcCoda , data=myData , compVal=NULL , compValDiff=0.0 )
+```
+
+The estimate are reasonable based on the above plots, which usually have wider HDI than 3 subjects with 9 plots in theta[1], theta[1]-theta[2] and theta[2].  
+
+\newpage  
+
+# Exercise 8.2
+```{r, echo = FALSE}
+data <- read.csv("/Users/sebas_jiang/Desktop/MA677/Assignment/Jags-Ydich-XnomSsubj-MbernBeta-Example.R")
+y = data$y
+s = as.numeric(data$s)
+Ntotal = length(y)
+Nsubj = length(unique(s))
+dataList = list(y=y,s=s,Ntotal = Ntotal, Nsubj = Nsubj)
+modelString = "
+model {
+  for ( i in 1:Ntotal ) {
+    y[i] ~ dbern( theta )
+  }
+  theta ~ dbeta( 2 , 2 )
+}
+"
+writeLines(modelString , con="/Users/sebas_jiang/Desktop/MA677/Assignment/TEMPmodel.txt")
+# Generate the MCMC chain:
+summaryInfo = smryMCMC( mcmcCoda , compVal=0.5 , rope=c(0.45,0.55) ,
+                        compValDiff=0.0 , ropeDiff = c(-0.05,0.05) )
+```
+
+The output differs in the numerical details due to randomness in the MCMC chain. Although the output includes many decimal places, most are not significant due to the sampling randomness in the MCMC chain; only the first few digits are stable, depending on the ESS.  
+
+\newpage  
+
+# Exercise 8.3
+```{r, echo = FALSE}
+fileNameRoot = "Jags-Ydich-XnomSsubj-MbernBeta-"
+graphFileType = "eps"
+# Generate the MCMC chain:
+mcmcCoda = genMCMC( data=myData , numSavedSteps=50000 , saveName=fileNameRoot )
+# Display diagnostics of chain, for specified parameters:
+parameterNames = varnames(mcmcCoda) # get all parameter names
+for ( parName in parameterNames ) {
+  diagMCMC( codaObject=mcmcCoda , parName=parName ,
+                saveName=fileNameRoot , saveType=graphFileType )
+}
+# Get summary statistics of chain:
+summaryInfo = smryMCMC( mcmcCoda , compVal=0.5 , rope=c(0.45,0.55) ,
+                        compValDiff=0.0 , ropeDiff = c(-0.05,0.05) ,
+                        saveName=fileNameRoot )
+# Display posterior information:
+plotMCMC( mcmcCoda , data=myData , compVal=NULL , #rope=c(0.45,0.55) ,
+          compValDiff=0.0 , #ropeDiff = c(-0.05,0.05) ,
+          saveName=fileNameRoot , saveType=graphFileType )
+```
+
+From the above lines, the first one specifies the beginning of the filenames for saved information, and the second one specifies the graphics format for saved graphs.  
+
+The MCMC chain is saved in a file named Jags-Ydich-XnomSsubj-MbernBeta-Mcmc.Rdata. Notice the name is the fileNameRoot with Mcmc appended. It is in compressed Rdata format.  
+
+The diagnostic graphs are saved in files named Jags-Ydich-XnomSsubj-MbernBeta-Diagtheta[1].eps and Jags-Ydich-XnomSsubj-MbernBeta-Diagtheta[2].eps  
+
+\newpage  
+
+# Exercise 8.4  
+## (A)  
+```{r, echo = FALSE}
+# Optional generic preliminaries:
+graphics.off() # This closes all of R's graphics windows.
+rm(list=ls())  # Careful! This clears all of R's memory!
+myData = read.csv("/Users/sebas_jiang/Desktop/MA677/Assignment/file1.csv")
+source("/Users/sebas_jiang/Desktop/MA677/Assignment/Jags-Ydich-XnomSsubj-MbernBeta.R")
+fileNameRoot = "Jags-Ydich-XnomSsubj-MbernBeta-"
+graphFileType = "eps"
+mcmcCoda = genMCMC( data=myData , numSavedSteps=50000 , saveName=fileNameRoot )
+parameterNames = varnames(mcmcCoda) # get all parameter names
+for ( parName in parameterNames ) {
+  diagMCMC( codaObject=mcmcCoda , parName=parName ,
+            saveName=fileNameRoot , saveType=graphFileType )
+}
+# Get summary statistics of chain:
+summaryInfo = smryMCMC( mcmcCoda , compVal=NULL , #rope=c(0.45,0.55) ,
+                        compValDiff=0.0 , #ropeDiff = c(-0.05,0.05) ,
+                        saveName=fileNameRoot )
+# Display posterior information:
+plotMCMC( mcmcCoda , data=myData , compVal=NULL , #rope=c(0.45,0.55) ,
+          compValDiff=0.0 , #ropeDiff = c(-0.05,0.05) ,
+          saveName=fileNameRoot , saveType=graphFileType )
+```
+
+## (B)
+```{r, echo = FALSE}
+graphics.off()
+rm(list=ls())
+myData = read.csv("/Users/sebas_jiang/Desktop/MA677/Assignment/file1.csv")
+source("/Users/sebas_jiang/Desktop/MA677/Assignment/Jags-Ydich-XnomSsubj-MbernBeta.R")
+fileNameRoot = "Jags-Ydich-XnomSsubj-MbernBeta-"
+graphFileType = "eps"
+mcmcCoda = genMCMC( data=myData , numSavedSteps=50000 , saveName=fileNameRoot )
+parameterNames = varnames(mcmcCoda) # get all parameter names
+for ( parName in parameterNames ) {
+  diagMCMC( codaObject=mcmcCoda , parName=parName ,
+            saveName=fileNameRoot , saveType=graphFileType )
+}
+# Summary statistics of chain:
+summaryInfo = smryMCMC( mcmcCoda , compVal=NULL , #rope=c(0.45,0.55) ,
+                        compValDiff=0.0 , #ropeDiff = c(-0.05,0.05) ,
+                        saveName=fileNameRoot )
+# Posterior information:
+plotMCMC( mcmcCoda , data=myData , compVal=NULL , #rope=c(0.45,0.55) ,
+          compValDiff=0.0 , #ropeDiff = c(-0.05,0.05) ,
+          saveName=fileNameRoot , saveType=graphFileType )
+```
+
+In the file Jags-Ydich-XnomSsubj-MbernBeta.R, change the specification of the prior to dbeta(1,1) in line 36, then we run the script Jags-Ydich-XnomSsubj-MbernBeta-Example.R.  
+
+Notice that the distributions on theta[1] and theta[2] look uniform, as they should, because that is a dbeta(1,1) distribution.            
+
+## (C)
+```{r, echo = FALSE}
+graphics.off()
+rm(list=ls())
+myData = read.csv("/Users/sebas_jiang/Desktop/MA677/Assignment/file1.csv")
+source("/Users/sebas_jiang/Desktop/MA677/Assignment/Jags-Ydich-XnomSsubj-MbernBeta.R")
+fileNameRoot = "Jags-Ydich-XnomSsubj-MbernBeta-"
+graphFileType = "eps"
+mcmcCoda = genMCMC( data=myData , numSavedSteps=50000 , saveName=fileNameRoot )
+parameterNames = varnames(mcmcCoda) # get all parameter names
+for ( parName in parameterNames ) {
+  diagMCMC( codaObject=mcmcCoda , parName=parName ,
+            saveName=fileNameRoot , saveType=graphFileType )
+}
+# Summary statistics of chain:
+summaryInfo = smryMCMC( mcmcCoda , compVal=NULL , #rope=c(0.45,0.55) ,
+                        compValDiff=0.0 , #ropeDiff = c(-0.05,0.05) ,
+                        saveName=fileNameRoot )
+# Posterior information:
+plotMCMC( mcmcCoda , data=myData , compVal=NULL , #rope=c(0.45,0.55) ,
+          compValDiff=0.0 , #ropeDiff = c(-0.05,0.05) ,
+          saveName=fileNameRoot , saveType=graphFileType )
+```
+
+In the file Jags-Ydich-XnomSsubj-MbernBeta.R, change the specification of the prior to dbeta(1,1), then we run the script Jags-Ydich-XnomSsubj-MbernBeta-Example.R.  
